@@ -14,11 +14,21 @@ app.get('/send.html', function(req, res){
         id: body.metadata.identifier[0],
         properties: {
           type: "resource",
-          title: body.metadata.identifier[0]
+          title: body.metadata.identifier[0],
+          level: parseInt(req.query.level),
+          grade: parseInt(req.query.level),
+          subject: req.query.subject
         }
       }
       console.log(document)
-      request({uri: req.query.target + "/" + document.id, method: "PUT", body: JSON.stringify(document.properties)})
+      request({uri: req.query.target + "/" + document.id, method: "PUT", body: JSON.stringify(document.properties)}, function(error, response, body) {
+        // Upload the file
+        var newDoc = JSON.parse(response.body)
+        console.log(newDoc)
+        var getMe = 'http://archive.org/download/' + newDoc.id + '/' + 'BeLL Ground Server Manual.pdf'
+        console.log(getMe)
+        request.get(getMe).pipe(request.put("http://bell.iriscouch.com/test-national-bell/" + newDoc.id + "/BeLL Ground Server Manual.pdf?rev=" + newDoc.rev))
+      })
       
     })
     body += "<p>Archive.org resource successfully added to your CouchDB.</p>"
