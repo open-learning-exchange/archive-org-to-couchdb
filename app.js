@@ -9,7 +9,7 @@ var $ = require('jQuery')
 app.get('/send.html', function(req, res){
   
   // Create a form that will put GET parameters into the URL
-  var body = '<form method="GET" action="/send.html">   Source: <input type="text" name="source"><br>      Target:<input type="text" name="target"><br>      Level:<input type="text" name="level"><br>      Subject:<input type="text" name="subject"><br>      <input type="submit" value="send">    </form>';
+  var body = '<form method="GET" action="/send.html">   Source: <input type="text" name="source" size=70><br>      Target:<input type="text" name="target" size=70><br>      Level:<input type="text" name="level"><br>      Subject:<input type="text" name="subject"><br>      <input type="submit" value="send">    </form>';
   
   // Process the parameters if they exist
   if(req.query.source && req.query.target) {
