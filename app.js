@@ -20,7 +20,14 @@ app.get('/send.html', function(req, res){
     // GET the archive.org resource
     //
     request({uri: processCtx.source + "?output=json", json: true}, function(error, response, body) {
+      // @todo Find the PDF
       archiveOrgResource = body
+      var filename
+      $.each(archiveOrgResource.files, function(index, element) {
+        if (element.format == "Text PDF") {
+          filename = index
+        }
+      })
       newCouchDoc = {
         id: archiveOrgResource.metadata.identifier[0],
         type: "resource",
@@ -28,7 +35,8 @@ app.get('/send.html', function(req, res){
         level: parseInt(req.query.level),
         grade: parseInt(req.query.level),
         subject: processCtx.subject,
-        openWith: "pdf-js-viewer"
+        openWith: "pdf-js-viewer",
+        filename: filename
       }
 
       //
@@ -40,15 +48,8 @@ app.get('/send.html', function(req, res){
         // GET the archive.org resource file stream and pipe it to CouchDB
         //
         var newCouchDocInfo = JSON.parse(response.body)
-        // @todo Find the PDF
-        var fileName
-        $.each(archiveOrgResource.files, function(index, element) {
-          if (element.format == "Text PDF") {
-            fileName = index
-          }
-        })
-        var sourceURI = 'http://archive.org/download/' + newCouchDocInfo.id + fileName
-        var targetURI = processCtx.target + "/" + newCouchDocInfo.id + fileName + "?rev=" + newCouchDocInfo.rev 
+        var sourceURI = 'http://archive.org/download/' + newCouchDocInfo.id + newCouchDoc.filename
+        var targetURI = processCtx.target + "/" + newCouchDocInfo.id + newCouchDoc.filename + "?rev=" + newCouchDocInfo.rev 
         console.log(targetURI)
         console.log(sourceURI)
         request.get(sourceURI).pipe(request.put(targetURI))
