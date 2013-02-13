@@ -43,7 +43,6 @@ app.get('/send.html', function(req, res){
         // @todo Find the PDF
         var fileName
         $.each(archiveOrgResource.files, function(index, element) {
-          console.log(element)
           if (element.format == "Text PDF") {
             fileName = index
           }
