@@ -4,6 +4,7 @@ var request = require('request')
 var archiveOrgResource = {}
 var newCouchDoc = {}
 var processCtx = {}
+var $ = require('jQuery')
 
 app.get('/send.html', function(req, res){
   
@@ -26,7 +27,8 @@ app.get('/send.html', function(req, res){
         title: archiveOrgResource.metadata.identifier[0],
         level: parseInt(req.query.level),
         grade: parseInt(req.query.level),
-        subject: processCtx.subject
+        subject: processCtx.subject,
+        openWith: "pdf-js-viewer"
       }
 
       //
@@ -39,9 +41,15 @@ app.get('/send.html', function(req, res){
         //
         var newCouchDocInfo = JSON.parse(response.body)
         // @todo Find the PDF
-        var fileName = "BeLL Ground Server Manual.pdf"
-        var sourceURI = 'http://archive.org/download/' + newCouchDocInfo.id + '/' + fileName
-        var targetURI = processCtx.target + "/" + newCouchDocInfo.id + "/" + fileName + "?rev=" + newCouchDocInfo.rev 
+        var fileName
+        $.each(archiveOrgResource.files, function(index, element) {
+          console.log(element)
+          if (element.format == "Text PDF") {
+            fileName = index
+          }
+        })
+        var sourceURI = 'http://archive.org/download/' + newCouchDocInfo.id + fileName
+        var targetURI = processCtx.target + "/" + newCouchDocInfo.id + fileName + "?rev=" + newCouchDocInfo.rev 
         console.log(targetURI)
         console.log(sourceURI)
         request.get(sourceURI).pipe(request.put(targetURI))
