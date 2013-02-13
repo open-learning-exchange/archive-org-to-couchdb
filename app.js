@@ -1,6 +1,9 @@
 var express = require('express')
 var app = express()
 var request = require('request')
+var archiveOrgResource = {}
+var newCouchDoc = {}
+var processCtx = {}
 
 app.get('/send.html', function(req, res){
   
@@ -9,29 +12,47 @@ app.get('/send.html', function(req, res){
   
   // Process the parameters if they exist
   if(req.query.source && req.query.target) {
-    request({uri: req.query.source + "?output=json", json: true}, function(error, response, body) {
-      var document = {
-        id: body.metadata.identifier[0],
-        properties: {
-          type: "resource",
-          title: body.metadata.identifier[0],
-          level: parseInt(req.query.level),
-          grade: parseInt(req.query.level),
-          subject: req.query.subject
-        }
+    // Save the parameters for a deeper context
+    processCtx = req.query
+
+    //
+    // GET the archive.org resource
+    //
+    request({uri: processCtx.source + "?output=json", json: true}, function(error, response, body) {
+      archiveOrgResource = body
+      newCouchDoc = {
+        id: archiveOrgResource.metadata.identifier[0],
+        type: "resource",
+        title: archiveOrgResource.metadata.identifier[0],
+        level: parseInt(req.query.level),
+        grade: parseInt(req.query.level),
+        subject: processCtx.subject
       }
-      console.log(document)
-      request({uri: req.query.target + "/" + document.id, method: "PUT", body: JSON.stringify(document.properties)}, function(error, response, body) {
-        // Upload the file
-        var newDoc = JSON.parse(response.body)
-        console.log(newDoc)
-        var getMe = 'http://archive.org/download/' + newDoc.id + '/' + 'BeLL Ground Server Manual.pdf'
-        console.log(getMe)
-        request.get(getMe).pipe(request.put("http://bell.iriscouch.com/test-national-bell/" + newDoc.id + "/BeLL Ground Server Manual.pdf?rev=" + newDoc.rev))
+
+      //
+      // Save the resource to the target CouchDB
+      //
+      request({uri: processCtx.target + "/" + newCouchDoc.id, method: "PUT", body: JSON.stringify(newCouchDoc)}, function(error, response, body) {
+
+        //
+        // GET the archive.org resource file stream and pipe it to CouchDB
+        //
+        var newCouchDocInfo = JSON.parse(response.body)
+        // @todo Find the PDF
+        var fileName = "BeLL Ground Server Manual.pdf"
+        var sourceURI = 'http://archive.org/download/' + newCouchDocInfo.id + '/' + fileName
+        var targetURI = processCtx.target + "/" + newCouchDocInfo.id + "/" + fileName + "?rev=" + newCouchDocInfo.rev 
+        console.log(targetURI)
+        console.log(sourceURI)
+        request.get(sourceURI).pipe(request.put(targetURI))
+
       })
       
     })
+
+    // @todo This is a lie. We're not really checking :P
     body += "<p>Archive.org resource successfully added to your CouchDB.</p>"
+
   }  
 
   // Print the body
